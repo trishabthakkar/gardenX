@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gardenX — Knowledge Graph</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+    /* ── Scrollbar ────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 3px; height: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+    /* ── Markdown body ────────────────────────────────────────────── */
+    .md-body { font-size: .875rem; line-height: 1.8; color: #94a3b8; }
+    .md-body h1 {
+      font-size: 1.2rem; font-weight: 600; color: #f1f5f9;
+      margin: 0 0 .75rem; padding-bottom: .6rem;
+      border-bottom: 1px solid #1e293b; line-height: 1.3;
+    }
+    .md-body h2 { font-size: 1rem; font-weight: 600; color: #e2e8f0; margin: 1.5rem 0 .5rem; }
+    .md-body h3 { font-size: .875rem; font-weight: 600; color: #cbd5e1; margin: 1.25rem 0 .4rem; }
+    .md-body h4 { font-size: .8rem; font-weight: 600; color: #94a3b8; margin: 1rem 0 .35rem; text-transform: uppercase; letter-spacing: .05em; }
+    .md-body p  { margin-bottom: .875rem; }
+    .md-body ul { list-style: disc; padding-left: 1.25rem; margin-bottom: .875rem; }
+    .md-body ol { list-style: decimal; padding-left: 1.25rem; margin-bottom: .875rem; }
+    .md-body li { margin-bottom: .25rem; }
+    .md-body strong { color: #e2e8f0; font-weight: 600; }
+    .md-body em     { color: #a8b5c7; font-style: italic; }
+    .md-body a { color: #34d399; text-decoration: none; }
+    .md-body a:hover { text-decoration: underline; }
+    .md-body code {
+      font-family: 'JetBrains Mono', monospace; font-size: .78rem;
+      background: #0d1117; color: #6ee7b7;
+      padding: .15rem .45rem; border-radius: 4px; border: 1px solid #1e293b;
+    }
+    .md-body pre {
+      background: #0d1117; border: 1px solid #1e293b; border-radius: 8px;
+      padding: 1rem 1.1rem; margin: .25rem 0 1rem; overflow-x: auto;
+    }
+    .md-body pre code { background: none; border: none; padding: 0; font-size: .8rem; }
+    .md-body blockquote {
+      border-left: 2px solid #065f46; padding: .1rem 0 .1rem 1rem;
+      margin: .75rem 0 1rem; color: #64748b;
+    }
+    .md-body hr { border: none; border-top: 1px solid #1e293b; margin: 1.5rem 0; }
+    .md-body table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: .8rem; }
+    .md-body th { background: #0d1117; color: #e2e8f0; padding: .45rem .75rem; border: 1px solid #1e293b; text-align: left; font-weight: 500; }
+    .md-body td { padding: .35rem .75rem; border: 1px solid #1e293b; }
+
+    /* ── Wiki-link buttons ─────────────────────────────────────────── */
+    .wiki-link {
+      color: #34d399; cursor: pointer; background: transparent; border: none;
+      border-bottom: 1px dashed #065f46; padding: 0 1px; font: inherit;
+      transition: color .12s, border-color .12s;
+    }
+    .wiki-link:hover { color: #6ee7b7; border-bottom-color: #34d399; }
+    /* Broken wiki-links — note doesn't exist yet */
+    .wiki-link.broken {
+      color: #475569; border-bottom-color: #1e293b; border-bottom-style: dotted;
+      cursor: cell;
+    }
+    .wiki-link.broken:hover { color: #34d399; border-bottom-color: #065f46; border-bottom-style: dashed; }
+
+    /* ── Inline #tag links ─────────────────────────────────────────── */
+    .tag-link {
+      color: #4ade80; cursor: pointer; background: transparent; border: none;
+      padding: 0; font: inherit; transition: color .12s;
+    }
+    .tag-link:hover { color: #86efac; }
+
+    /* ── Graph node labels ─────────────────────────────────────────── */
+    .node-label {
+      font-family: 'Inter', sans-serif; font-size: 10px; fill: #2d3f52;
+      pointer-events: none; user-select: none; text-anchor: middle;
+      transition: fill .2s;
+    }
+    .node-label.lit { fill: #64748b; }
+
+    /* ── Search filter: dim non-matching ───────────────────────────── */
+    .node-dim circle { opacity: .1 !important; }
+    .node-dim text   { opacity: .07 !important; }
+    .edge-dim        { opacity: .04 !important; }
+    /* Highlighted hit nodes */
+    .node-hit .nc-hit { stroke: #34d399 !important; stroke-width: 2px !important; }
+
+    /* ── Panel fade-in ─────────────────────────────────────────────── */
+    .fade-in { animation: fadeIn .18s ease-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(3px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Selected node ring pulse ──────────────────────────────────── */
+    @keyframes ringPulse {
+      0%   { r: 0;  opacity: .5; }
+      100% { r: 14; opacity: 0;  }
+    }
+    .sel-ring { animation: ringPulse 2.2s ease-out infinite; fill: none; stroke: #34d399; stroke-width: 1px; }
+
+    button:focus-visible { outline: 2px solid #059669; outline-offset: 2px; border-radius: 4px; }
+    input:focus-visible  { outline: none; }
+  </style>
+</head>
+
+<body class="bg-[#0B0D12] h-screen flex flex-col overflow-hidden font-sans text-slate-300 select-none">
+
+  <!-- ══════════════════════════════════════════════════════════════
+       TOP BAR
+  ═══════════════════════════════════════════════════════════════ -->
+  <header class="bg-[#121620] border-b border-slate-800/70 flex items-center gap-3 px-5 h-[52px] shrink-0 z-10">
+
+    <!-- Logo -->
+    <div class="flex items-center gap-2.5 shrink-0">
+      <div class="w-[22px] h-[22px] rounded-[5px] bg-emerald-800 flex items-center justify-center">
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+          <circle cx="7"    cy="7"    r="2.2" fill="#a7f3d0"/>
+          <circle cx="2.5"  cy="2.5"  r="1.4" fill="#6ee7b7" opacity=".65"/>
+          <circle cx="11.5" cy="2.5"  r="1.4" fill="#6ee7b7" opacity=".65"/>
+          <circle cx="2.5"  cy="11.5" r="1.4" fill="#6ee7b7" opacity=".45"/>
+          <circle cx="11.5" cy="11.5" r="1.4" fill="#6ee7b7" opacity=".45"/>
+          <line x1="7" y1="7" x2="2.5"  y2="2.5"  stroke="#34d399" stroke-width=".8" opacity=".5"/>
+          <line x1="7" y1="7" x2="11.5" y2="2.5"  stroke="#34d399" stroke-width=".8" opacity=".5"/>
+          <line x1="7" y1="7" x2="2.5"  y2="11.5" stroke="#34d399" stroke-width=".8" opacity=".35"/>
+          <line x1="7" y1="7" x2="11.5" y2="11.5" stroke="#34d399" stroke-width=".8" opacity=".35"/>
+        </svg>
+      </div>
+      <span class="text-slate-100 font-semibold text-[13px] tracking-[.02em]">gardenX</span>
+    </div>
+
+    <!-- Stats -->
+    <div class="flex items-center gap-1.5 font-mono text-[11px] text-slate-600 shrink-0">
+      <span id="node-count">0 nodes</span>
+      <span class="text-slate-800">·</span>
+      <span id="edge-count">0 edges</span>
+    </div>
+
+    <div class="flex-1"></div>
+
+    <!-- Search -->
+    <div class="relative flex items-center">
+      <!-- search icon -->
+      <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-700 pointer-events-none"
+           fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input id="search-input" type="text" placeholder="Search notes… or #tag"
+             autocomplete="off" spellcheck="false"
+        class="bg-[#0d1117] border border-slate-800 rounded-[6px] text-slate-300 text-[12px]
+               pl-7 pr-7 py-[6px] w-52 placeholder-slate-700 transition-colors
+               focus:border-emerald-900 focus:bg-[#0a1a12]" />
+      <!-- clear button -->
+      <button id="search-clear"
+        class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-300 transition-colors"
+        title="Clear search (Esc)">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Filter badge -->
+    <span id="filter-badge"
+      class="hidden text-[10px] font-mono text-emerald-400 bg-emerald-950/40
+             border border-emerald-900/40 rounded-full px-2 py-0.5 shrink-0">
+    </span>
+
+    <!-- Refresh -->
+    <button id="refresh-btn"
+      class="flex items-center gap-1.5 text-slate-600 text-[12px] border border-slate-800
+             rounded-[6px] px-3 py-[6px] hover:border-slate-700 hover:text-slate-300
+             transition-colors shrink-0">
+      <svg id="refresh-icon" class="w-3 h-3" fill="none" stroke="currentColor"
+           stroke-width="2" viewBox="0 0 24 24">
+        <path d="M4 4v5h5"/><path d="M20 20v-5h-5"/>
+        <path d="M4 9a9 9 0 0 1 14.854-4.144M20 15A9 9 0 0 1 5.146 19.144"/>
+      </svg>
+      Refresh
+    </button>
+  </header>
+
+
+  <!-- ══════════════════════════════════════════════════════════════
+       MAIN LAYOUT
+  ═══════════════════════════════════════════════════════════════ -->
+  <main class="flex flex-1 min-h-0 overflow-hidden">
+
+    <!-- ── Graph Canvas ──────────────────────────────────────── -->
+    <section class="flex-1 relative overflow-hidden min-w-0">
+      <svg id="graph" class="w-full h-full">
+        <defs>
+          <marker id="arr" viewBox="0 -4 10 8" refX="21" refY="0"
+                  markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M0,-4L10,0L0,4" fill="#1e293b"/>
+          </marker>
+          <marker id="arr-hl" viewBox="0 -4 10 8" refX="21" refY="0"
+                  markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M0,-4L10,0L0,4" fill="#166534"/>
+          </marker>
+        </defs>
+      </svg>
+
+      <!-- Empty state -->
+      <div id="graph-empty"
+           class="hidden absolute inset-0 flex flex-col items-center justify-center gap-5 pointer-events-none">
+        <div class="w-14 h-14 rounded-2xl bg-[#121620] border border-slate-800 flex items-center justify-center">
+          <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414A1 1 0 0 1 19 9.414V19a2 2 0 0 1-2 2z"/>
+          </svg>
+        </div>
+        <div class="text-center space-y-1">
+          <p class="text-slate-400 text-sm font-medium">No notes found</p>
+          <p class="text-slate-700 text-xs">Drop <code class="text-emerald-800 font-mono">.md</code> files into
+             <code class="text-emerald-800 font-mono">/notes</code></p>
+        </div>
+      </div>
+
+      <!-- Zoom controls -->
+      <div class="absolute bottom-5 left-5 flex flex-col gap-1">
+        <button id="zoom-in"
+          class="w-7 h-7 bg-[#121620] border border-slate-800 rounded-[5px] text-slate-500
+                 hover:text-slate-200 hover:border-slate-700 transition-colors flex items-center
+                 justify-center leading-none text-base">+</button>
+        <button id="zoom-reset"
+          class="w-7 h-7 bg-[#121620] border border-slate-800 rounded-[5px] text-slate-500
+                 hover:text-slate-200 hover:border-slate-700 transition-colors flex items-center
+                 justify-center leading-none text-[10px] font-mono">⊙</button>
+        <button id="zoom-out"
+          class="w-7 h-7 bg-[#121620] border border-slate-800 rounded-[5px] text-slate-500
+                 hover:text-slate-200 hover:border-slate-700 transition-colors flex items-center
+                 justify-center leading-none text-base">−</button>
+      </div>
+    </section>
+
+
+    <!-- ── Note Panel ─────────────────────────────────────────── -->
+    <aside class="w-[400px] shrink-0 border-l border-slate-800/70 bg-[#121620] flex flex-col min-h-0">
+
+      <!-- Panel header -->
+      <div class="border-b border-slate-800/70 px-4 py-3 flex items-center gap-2 shrink-0 min-h-[52px]">
+        <!-- Back / Forward navigation -->
+        <button id="nav-back" disabled title="Back (Alt ←)"
+          class="w-6 h-6 flex items-center justify-center rounded text-slate-700 opacity-30
+                 hover:text-slate-300 hover:opacity-100 disabled:pointer-events-none transition-all shrink-0">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+        </button>
+        <button id="nav-fwd" disabled title="Forward (Alt →)"
+          class="w-6 h-6 flex items-center justify-center rounded text-slate-700 opacity-30
+                 hover:text-slate-300 hover:opacity-100 disabled:pointer-events-none transition-all shrink-0">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </button>
+
+        <!-- Separator -->
+        <span class="text-slate-800 text-xs">│</span>
+
+        <!-- Note title -->
+        <h2 id="note-title" class="text-slate-100 font-semibold text-[13px] flex-1 truncate leading-snug">
+          gardenX
+        </h2>
+
+        <!-- Edit toggle -->
+        <div id="edit-controls" class="hidden items-center shrink-0">
+          <button id="edit-toggle"
+            class="text-[11px] text-slate-500 border border-slate-800 rounded-[5px] px-2.5 py-1
+                   hover:text-slate-200 hover:border-slate-700 transition-colors font-medium">
+            Edit
+          </button>
+        </div>
+      </div>
+
+      <!-- Welcome state -->
+      <div id="panel-welcome" class="flex-1 flex flex-col items-center justify-center px-8 gap-5 min-h-0">
+        <div class="w-11 h-11 rounded-xl bg-emerald-950/25 border border-emerald-900/25 flex items-center justify-center">
+          <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path d="M7.5 3.75H6A2.25 2.25 0 0 0 3.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0 1 20.25 6v1.5m0 9V18A2.25 2.25 0 0 1 18 20.25h-1.5m-9 0H6A2.25 2.25 0 0 1 3.75 18v-1.5M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+          </svg>
+        </div>
+        <div class="text-center space-y-1.5">
+          <p class="text-slate-300 text-[13px] font-medium">Select a node to open a note</p>
+          <p class="text-slate-600 text-xs leading-relaxed">
+            Click any node in the graph to view its<br/>content, links, and metadata.
+          </p>
+        </div>
+        <!-- Empty-graph mock note -->
+        <div id="mock-note" class="hidden w-full rounded-lg bg-[#0d1117] border border-slate-800/70 p-4 text-left space-y-2">
+          <p class="text-emerald-700 text-xs font-mono font-medium"># Example Note</p>
+          <p class="text-slate-600 text-xs leading-relaxed">
+            Notes live in <code class="text-emerald-800">/notes</code> as plain
+            <code class="text-emerald-800">.md</code> files. Link them with
+            <span class="text-emerald-700">[[Wiki Links]]</span> and tag them with
+            <span class="text-emerald-800">#hashtags</span>.<br/>
+            <span class="text-slate-700 text-[10px]">Backlinks are computed automatically.</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Note viewer -->
+      <div id="note-viewer" class="hidden flex-1 overflow-y-auto px-5 py-5 min-h-0">
+        <div id="md-body" class="md-body"></div>
+      </div>
+
+      <!-- Note editor -->
+      <div id="note-editor" class="hidden flex-1 flex flex-col min-h-0">
+        <textarea id="editor-textarea" spellcheck="false"
+          class="flex-1 bg-transparent text-slate-300 font-mono text-[12px] leading-[1.85]
+                 px-5 py-5 resize-none outline-none placeholder-slate-700 overflow-y-auto"
+          placeholder="Write Markdown here…"></textarea>
+        <div class="border-t border-slate-800/70 px-5 py-3 flex items-center justify-between shrink-0">
+          <span id="save-status" class="text-[11px] text-slate-700">—</span>
+          <div class="flex items-center gap-2">
+            <button id="cancel-edit-btn"
+              class="text-[11px] text-slate-500 border border-slate-800 rounded-[5px] px-2.5 py-1
+                     hover:text-slate-300 hover:border-slate-700 transition-colors">
+              Cancel
+            </button>
+            <button id="save-btn"
+              class="text-[11px] text-emerald-400 bg-emerald-950/30 border border-emerald-900/50
+                     rounded-[5px] px-3 py-1 hover:bg-emerald-950/50 hover:border-emerald-800
+                     transition-colors font-medium disabled:opacity-40">
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metadata footer -->
+      <div id="panel-footer" class="hidden border-t border-slate-800/70 px-5 pt-4 pb-5 space-y-4 shrink-0">
+        <div>
+          <p class="text-[10px] text-slate-700 uppercase tracking-[.1em] font-medium mb-2">Tags</p>
+          <div id="tag-list" class="flex flex-wrap gap-1.5">
+            <span class="text-slate-700 text-xs">—</span>
+          </div>
+        </div>
+        <div>
+          <p class="text-[10px] text-slate-700 uppercase tracking-[.1em] font-medium mb-2">
+            Backlinks
+            <span id="backlink-count" class="text-slate-700 font-mono font-normal normal-case tracking-normal text-[10px] ml-1"></span>
+          </p>
+          <div id="backlink-list" class="space-y-0.5">
+            <span class="text-slate-700 text-xs">—</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Tooltip -->
+  <div id="tooltip"
+    class="fixed hidden bg-[#121620] border border-slate-800 rounded-lg px-3 py-2.5
+           text-xs pointer-events-none z-50 shadow-2xl max-w-[200px]">
+    <p id="tt-title" class="text-slate-100 font-semibold mb-1 leading-snug truncate"></p>
+    <p id="tt-meta"  class="text-slate-600 text-[10px] leading-relaxed font-mono"></p>
+    <p id="tt-hint"  class="text-slate-700 text-[10px] mt-0.5 italic"></p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCRIPTS
+  ═══════════════════════════════════════════════════════════════ -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+
+  <script>
+  // ═══════════════════════════════════════════════════════════════
+  //  gardenX — Application
+  // ═══════════════════════════════════════════════════════════════
+
+  // ── DOM refs ──────────────────────────────────────────────────
+  const el = id => document.getElementById(id);
+  const dom = {
+    graph:          el('graph'),
+    nodeCount:      el('node-count'),
+    edgeCount:      el('edge-count'),
+    searchInput:    el('search-input'),
+    searchClear:    el('search-clear'),
+    filterBadge:    el('filter-badge'),
+    refreshBtn:     el('refresh-btn'),
+    refreshIcon:    el('refresh-icon'),
+    graphEmpty:     el('graph-empty'),
+    navBack:        el('nav-back'),
+    navFwd:         el('nav-fwd'),
+    panelWelcome:   el('panel-welcome'),
+    noteViewer:     el('note-viewer'),
+    noteEditor:     el('note-editor'),
+    mdBody:         el('md-body'),
+    noteTitle:      el('note-title'),
+    editControls:   el('edit-controls'),
+    editToggle:     el('edit-toggle'),
+    editorTextarea: el('editor-textarea'),
+    saveBtn:        el('save-btn'),
+    cancelEditBtn:  el('cancel-edit-btn'),
+    saveStatus:     el('save-status'),
+    panelFooter:    el('panel-footer'),
+    tagList:        el('tag-list'),
+    backlinkList:   el('backlink-list'),
+    backlinkCount:  el('backlink-count'),
+    tooltip:        el('tooltip'),
+    ttTitle:        el('tt-title'),
+    ttMeta:         el('tt-meta'),
+    ttHint:         el('tt-hint'),
+    mockNote:       el('mock-note'),
+    zoomIn:         el('zoom-in'),
+    zoomReset:      el('zoom-reset'),
+    zoomOut:        el('zoom-out'),
+  };
+
+  // ── App state ─────────────────────────────────────────────────
+  let graphData   = { nodes: [], edges: [] };
+  let selectedId  = null;
+  let currentNote = null;
+  let isEditing   = false;
+  let hasUnsaved  = false;
+
+  // D3 objects — persist across incremental updates
+  let simulation   = null;
+  let zoomBehavior = null;
+  let rootG        = null;
+  let edgesG       = null;
+  let nodesG       = null;
+  let linkSel      = null;
+  let nodeSel      = null;
+
+  // ── Navigation history ────────────────────────────────────────
+  let navHistory = [];   // array of filenames
+  let navIdx     = -1;   // current position in history
+
+  function pushHistory(filename) {
+    if (navHistory[navIdx] === filename) return;  // same note, skip
+    navHistory = navHistory.slice(0, navIdx + 1); // truncate forward stack
+    navHistory.push(filename);
+    navIdx = navHistory.length - 1;
+    refreshNavButtons();
+  }
+
+  function goBack() {
+    if (navIdx <= 0) return;
+    navIdx--;
+    selectNoteInternal(navHistory[navIdx]);
+    refreshNavButtons();
+  }
+
+  function goForward() {
+    if (navIdx >= navHistory.length - 1) return;
+    navIdx++;
+    selectNoteInternal(navHistory[navIdx]);
+    refreshNavButtons();
+  }
+
+  function refreshNavButtons() {
+    const atStart = navIdx <= 0;
+    const atEnd   = navIdx >= navHistory.length - 1;
+    dom.navBack.disabled = atStart;
+    dom.navFwd.disabled  = atEnd;
+    dom.navBack.classList.toggle('opacity-30', atStart);
+    dom.navFwd.classList.toggle('opacity-30', atEnd);
+    dom.navBack.classList.toggle('opacity-100', !atStart);
+    dom.navFwd.classList.toggle('opacity-100', !atEnd);
+  }
+
+  // ── Graph visual constants ────────────────────────────────────
+  const GC = {
+    nodeFill:        '#061a11',
+    nodeStroke:      '#166534',
+    nodeHoverFill:   '#052e16',
+    nodeHoverStroke: '#34d399',
+    nodeSelFill:     '#052e16',
+    nodeSelStroke:   '#86efac',
+    edgeDefault:     '#1e293b',
+    edgeHighlight:   '#166534',
+  };
+
+  // ── Utilities ─────────────────────────────────────────────────
+  const esc  = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const attr = s => String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  const nodeR = d => Math.max(6, Math.min(20, 6 + (d.backlinks?.length ?? 0) * 3));
+
+  // ── Marked — wiki-link inline extension ──────────────────────
+  function setupMarked() {
+    marked.use({
+      breaks: true, gfm: true,
+      extensions: [{
+        name: 'wikiLink',
+        level: 'inline',
+        start(src) { return src.indexOf('[['); },
+        tokenizer(src) {
+          const m = /^\[\[([^\]]+)\]\]/.exec(src);
+          if (m) return { type: 'wikiLink', raw: m[0], target: m[1].trim() };
+        },
+        renderer(token) {
+          const exists = graphData.nodes.some(n => n.id === token.target);
+          // Broken links get a tooltip hinting they can be created
+          const title = exists ? '' : ` title="Click to create &quot;${attr(token.target)}&quot;"`;
+          return `<button class="wiki-link${exists ? '' : ' broken'}" data-target="${attr(token.target)}"${title}>${esc(token.target)}</button>`;
+        },
+      }],
+    });
+  }
+
+  // ── loadGraph ─────────────────────────────────────────────────
+  // preservePositions=true → incremental patch, keep node coords
+  // preservePositions=false → fresh render from scratch
+  async function loadGraph(preservePositions = false) {
+    try {
+      const res = await fetch('/api/graph');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      graphData = await res.json();
+    } catch (err) {
+      console.error('[gardenX] graph fetch failed:', err);
+      graphData = { nodes: [], edges: [] };
+    }
+
+    const { nodes, edges } = graphData;
+    dom.nodeCount.textContent = `${nodes.length} node${nodes.length !== 1 ? 's' : ''}`;
+    dom.edgeCount.textContent = `${edges.length} edge${edges.length !== 1 ? 's' : ''}`;
+    dom.graphEmpty.classList.toggle('hidden', nodes.length > 0);
+    dom.mockNote.classList.toggle('hidden', nodes.length > 0);
+
+    renderGraph(preservePositions);
+
+    // Re-apply active search filter on the refreshed graph
+    const q = dom.searchInput.value.trim();
+    if (q) runSearch();
+  }
+
+  // ── renderGraph ───────────────────────────────────────────────
+  // Unified render: creates SVG structure on first call, then uses
+  // D3 join() for all subsequent calls so node positions are kept.
+  function renderGraph(preservePositions = false) {
+    const W = dom.graph.clientWidth  || 800;
+    const H = dom.graph.clientHeight || 600;
+
+    // ── Save existing positions before rebuilding sim data ──
+    const posById = {};
+    if (preservePositions && simulation) {
+      simulation.nodes().forEach(d => { posById[d.id] = { x: d.x, y: d.y }; });
+    }
+
+    // ── Build simulation-ready copies ──
+    const simNodes = graphData.nodes.map(d => {
+      const p = posById[d.id];
+      return {
+        ...d,
+        x:  p?.x ?? W / 2 + (Math.random() - .5) * 200,
+        y:  p?.y ?? H / 2 + (Math.random() - .5) * 200,
+        vx: p ? 0 : undefined,
+        vy: p ? 0 : undefined,
+      };
+    });
+    const byId     = Object.fromEntries(simNodes.map(d => [d.id, d]));
+    const simEdges = graphData.edges.map(e => ({
+      source: byId[e.source] ?? e.source,
+      target: byId[e.target] ?? e.target,
+    }));
+
+    const svgSel = d3.select(dom.graph);
+
+    // ── Create SVG structure on first call only ──
+    if (!rootG) {
+      rootG  = svgSel.append('g').attr('class', 'scene');
+      edgesG = rootG.append('g').attr('class', 'edges');
+      nodesG = rootG.append('g').attr('class', 'nodes');
+
+      zoomBehavior = d3.zoom()
+        .scaleExtent([.08, 6])
+        .on('zoom', ev => rootG.attr('transform', ev.transform));
+      svgSel.call(zoomBehavior);
+      svgSel.on('dblclick.zoom', null);
+      svgSel.on('click', () => { if (!isEditing) deselect(); });
+    }
+
+    // ── Edges (join) ──
+    linkSel = edgesG.selectAll('line')
+      .data(simEdges)
+      .join(
+        enter => enter.append('line')
+          .attr('stroke',         GC.edgeDefault)
+          .attr('stroke-width',   1.2)
+          .attr('stroke-opacity', .65)
+          .attr('marker-end',     'url(#arr)'),
+        update => update,
+        exit   => exit.remove()
+      );
+
+    // ── Nodes (join) ──
+    nodeSel = nodesG.selectAll('g.node')
+      .data(simNodes, d => d.id)
+      .join(
+        // ─── ENTER: new nodes ─────────────────────────────────
+        enter => {
+          const g = enter.append('g')
+            .attr('class', 'node')
+            .style('cursor', 'pointer')
+            .style('opacity', preservePositions ? 0 : 1);
+
+          // Selection ring (animated pulse)
+          g.append('circle').attr('class', 'sel-ring').attr('r', 0).attr('opacity', 0);
+
+          // Main circle
+          g.append('circle')
+            .attr('class', 'nc')
+            .attr('r',            d => nodeR(d))
+            .attr('fill',         GC.nodeFill)
+            .attr('stroke',       GC.nodeStroke)
+            .attr('stroke-width', 1.5)
+            .on('mouseenter', function(_, d) {
+              if (d.id === selectedId) return;
+              d3.select(this)
+                .attr('fill', GC.nodeHoverFill)
+                .attr('stroke', GC.nodeHoverStroke);
+              d3.select(this.parentNode).select('text').classed('lit', true);
+            })
+            .on('mouseleave', function(_, d) {
+              if (d.id === selectedId) return;
+              d3.select(this)
+                .attr('fill', GC.nodeFill)
+                .attr('stroke', GC.nodeStroke);
+              d3.select(this.parentNode).select('text').classed('lit', false);
+            });
+
+          // Label
+          g.append('text')
+            .attr('class', 'node-label')
+            .attr('dy',   d => nodeR(d) + 13)
+            .text(d => d.title);
+
+          // Fade in new nodes when preserving layout
+          if (preservePositions) {
+            g.transition().duration(450).style('opacity', 1);
+          }
+
+          // Drag + click handlers (attached once, on enter only)
+          g.call(
+            d3.drag()
+              .on('start', (ev, d) => { if (!ev.active) simulation.alphaTarget(.3).restart(); d.fx = d.x; d.fy = d.y; })
+              .on('drag',  (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
+              .on('end',   (ev, d) => { if (!ev.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+          )
+          .on('click',      (ev, d) => { ev.stopPropagation(); selectNote(d.id); })
+          .on('mousemove',  showTooltip)
+          .on('mouseleave', hideTooltip);
+
+          return g;
+        },
+        // ─── UPDATE: existing nodes ────────────────────────────
+        update => {
+          // Backlink count may have changed → resize circle + label offset
+          update.select('circle.nc')
+            .attr('r', d => nodeR(d));
+          update.select('circle.sel-ring')
+            .attr('r', 0);
+          update.select('text.node-label')
+            .attr('dy', d => nodeR(d) + 13)
+            .text(d => d.title);
+          return update;
+        },
+        // ─── EXIT: removed notes ───────────────────────────────
+        exit => exit.transition().duration(200).style('opacity', 0).remove()
+      );
+
+    // ── Simulation ──
+    if (!simulation) {
+      simulation = d3.forceSimulation(simNodes)
+        .force('link',    d3.forceLink(simEdges).id(d => d.id).distance(130).strength(.75))
+        .force('charge',  d3.forceManyBody().strength(-300))
+        .force('center',  d3.forceCenter(W / 2, H / 2).strength(.06))
+        .force('collide', d3.forceCollide(d => nodeR(d) + 20).strength(.7))
+        .on('tick', tick);
+    } else {
+      simulation.nodes(simNodes);
+      simulation.force('link').links(simEdges);
+      simulation.force('center', d3.forceCenter(W / 2, H / 2).strength(.06));
+      simulation
+        .alpha(preservePositions ? .2 : .8)
+        .alphaDecay(.025)
+        .restart();
+    }
+
+    if (selectedId) applySelection(selectedId);
+  }
+
+  function tick() {
+    if (!linkSel || !nodeSel) return;
+    linkSel
+      .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+      .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+    nodeSel.attr('transform', d => `translate(${d.x},${d.y})`);
+  }
+
+  // ── Graph selection + edge highlight ─────────────────────────
+  function applySelection(id) {
+    if (!nodeSel) return;
+    nodeSel.select('circle.nc')
+      .attr('fill',         d => d.id === id ? GC.nodeSelFill   : GC.nodeFill)
+      .attr('stroke',       d => d.id === id ? GC.nodeSelStroke : GC.nodeStroke)
+      .attr('stroke-width', d => d.id === id ? 2 : 1.5);
+    nodeSel.select('circle.sel-ring').attr('opacity', d => d.id === id ? .5 : 0);
+    nodeSel.select('text.node-label').classed('lit', d => d.id === id);
+
+    const conn = edge => {
+      const s = edge.source?.id ?? edge.source;
+      const t = edge.target?.id ?? edge.target;
+      return s === id || t === id;
+    };
+    linkSel
+      .attr('stroke',         d => conn(d) ? GC.edgeHighlight : GC.edgeDefault)
+      .attr('stroke-opacity', d => conn(d) ? .85 : .3)
+      .attr('stroke-width',   d => conn(d) ? 1.8  : 1.2)
+      .attr('marker-end',     d => conn(d) ? 'url(#arr-hl)' : 'url(#arr)');
+  }
+
+  function deselect() {
+    selectedId = null;
+    if (!nodeSel) return;
+    nodeSel.select('circle.nc')
+      .attr('fill', GC.nodeFill).attr('stroke', GC.nodeStroke).attr('stroke-width', 1.5);
+    nodeSel.select('circle.sel-ring').attr('opacity', 0);
+    nodeSel.select('text.node-label').classed('lit', false);
+    linkSel
+      .attr('stroke', GC.edgeDefault).attr('stroke-opacity', .65)
+      .attr('stroke-width', 1.2).attr('marker-end', 'url(#arr)');
+    showView('welcome');
+  }
+
+  // ── Tooltip ───────────────────────────────────────────────────
+  function showTooltip(ev, d) {
+    const bl  = d.backlinks?.length ?? 0;
+    const tag = d.tags?.length ? d.tags.map(t => `#${t}`).join(' ') : '';
+    dom.ttTitle.textContent = d.title;
+    dom.ttMeta.textContent  = [bl ? `${bl} backlink${bl !== 1 ? 's' : ''}` : null, tag || null]
+                               .filter(Boolean).join('  ·  ') || 'No metadata';
+    dom.ttHint.textContent  = '';
+    dom.tooltip.classList.remove('hidden');
+    dom.tooltip.style.left  = (ev.clientX + 14) + 'px';
+    dom.tooltip.style.top   = (ev.clientY - 8)  + 'px';
+  }
+  function hideTooltip() { dom.tooltip.classList.add('hidden'); }
+
+  // ── Note fetch + render ───────────────────────────────────────
+
+  // Public: navigate to a note and push to history
+  async function selectNote(filename) {
+    await selectNoteInternal(filename);
+    pushHistory(filename);
+  }
+
+  // Internal: navigate without touching history (used by back/forward)
+  async function selectNoteInternal(filename) {
+    if (isEditing && hasUnsaved && !confirm('Discard unsaved changes?')) return;
+    isEditing  = false;
+    hasUnsaved = false;
+
+    try {
+      const res = await fetch(`/api/notes/${encodeURIComponent(filename)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      currentNote = await res.json();
+      selectedId  = filename;
+      applySelection(filename);
+      renderPanel(currentNote);
+    } catch (err) {
+      console.error('[gardenX] note fetch failed:', err);
+    }
+  }
+
+  // Create a blank note from a broken [[Link]] and open in edit mode
+  async function createNote(filename) {
+    const content = `# ${filename}\n\n`;
+    try {
+      const res = await fetch(`/api/notes/${encodeURIComponent(filename)}`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ content }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // loadGraph(true) preserves positions of all existing nodes;
+      // the new node will appear near center and fade in.
+      await loadGraph(true);
+      await selectNote(filename);
+      enterEdit();
+    } catch (err) {
+      console.error('[gardenX] create note failed:', err);
+    }
+  }
+
+  function renderPanel(note) {
+    dom.noteTitle.textContent = note.title;
+
+    // ── Render Markdown ──
+    dom.mdBody.innerHTML = marked.parse(note.raw ?? '');
+
+    // Wire regular wiki-links
+    dom.mdBody.querySelectorAll('.wiki-link:not(.broken)').forEach(btn => {
+      btn.addEventListener('click', () => selectNote(btn.dataset.target));
+    });
+    // Wire broken wiki-links → createNote
+    dom.mdBody.querySelectorAll('.wiki-link.broken').forEach(btn => {
+      btn.addEventListener('click', () => createNote(btn.dataset.target));
+    });
+
+    // Post-process: make inline #tag text clickable
+    linkifyTagsInDom(dom.mdBody);
+
+    // ── Tags footer ──
+    if (note.tags?.length) {
+      dom.tagList.innerHTML = note.tags.map(t =>
+        `<button class="tag-filter-btn inline-flex items-center text-[11px] text-emerald-300/80
+                         bg-emerald-950/40 border border-emerald-900/40 rounded-full
+                         px-2.5 py-[2px] font-mono hover:bg-emerald-950/70 transition-colors"
+                 data-tag="${attr(t)}">#${esc(t)}</button>`
+      ).join('');
+      dom.tagList.querySelectorAll('.tag-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          dom.searchInput.value = '#' + btn.dataset.tag;
+          runSearch();
+          dom.searchClear.classList.remove('hidden');
+        });
+      });
+    } else {
+      dom.tagList.innerHTML = '<span class="text-slate-700 text-xs">—</span>';
+    }
+
+    // ── Backlinks footer ──
+    const bls = note.backlinks ?? [];
+    dom.backlinkCount.textContent = bls.length ? `· ${bls.length}` : '';
+    dom.backlinkList.innerHTML = bls.length
+      ? bls.map(bl =>
+          `<button data-target="${attr(bl)}"
+            class="backlink-btn w-full text-left flex items-center gap-2 text-[12px] text-slate-500
+                   hover:text-emerald-400 py-[5px] px-2 rounded-[5px]
+                   hover:bg-emerald-950/15 transition-colors group">
+            <svg class="w-3 h-3 text-slate-700 group-hover:text-emerald-700 shrink-0 transition-colors"
+                 fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path d="m9 18 6-6-6-6"/>
+            </svg>
+            <span class="truncate">${esc(bl)}</span>
+          </button>`
+        ).join('')
+      : '<span class="text-slate-700 text-xs">—</span>';
+    dom.backlinkList.querySelectorAll('.backlink-btn').forEach(btn => {
+      btn.addEventListener('click', () => selectNote(btn.dataset.target));
+    });
+
+    showView('viewer');
+    dom.editControls.classList.remove('hidden');
+    dom.editControls.classList.add('flex');
+    dom.editToggle.textContent = 'Edit';
+  }
+
+  // ── View switching ────────────────────────────────────────────
+  function showView(which) {
+    dom.panelWelcome.classList.add('hidden');
+    dom.noteViewer.classList.add('hidden');
+    dom.noteEditor.classList.add('hidden');
+    dom.panelFooter.classList.add('hidden');
+
+    if (which === 'welcome') {
+      dom.panelWelcome.classList.remove('hidden');
+      dom.editControls.classList.remove('flex');
+      dom.editControls.classList.add('hidden');
+      dom.noteTitle.textContent = 'gardenX';
+      return;
+    }
+    if (which === 'viewer') {
+      dom.noteViewer.classList.remove('hidden');
+      dom.noteViewer.classList.add('fade-in');
+      dom.panelFooter.classList.remove('hidden');
+    }
+    if (which === 'editor') {
+      dom.noteEditor.classList.remove('hidden');
+      dom.noteEditor.classList.add('fade-in');
+    }
+  }
+
+  // ── Edit mode ─────────────────────────────────────────────────
+  dom.editToggle.addEventListener('click', () => {
+    if (!currentNote) return;
+    isEditing ? exitEdit() : enterEdit();
+  });
+
+  function enterEdit() {
+    isEditing = true;
+    dom.editToggle.textContent = 'Preview';
+    dom.editorTextarea.value   = currentNote.raw ?? '';
+    setSaveStatus('idle');
+    hasUnsaved = false;
+    showView('editor');
+    requestAnimationFrame(() => dom.editorTextarea.focus());
+  }
+
+  function exitEdit() {
+    isEditing  = false;
+    hasUnsaved = false;
+    dom.editToggle.textContent = 'Edit';
+    renderPanel(currentNote);
+  }
+
+  dom.cancelEditBtn.addEventListener('click', exitEdit);
+
+  dom.editorTextarea.addEventListener('input', () => {
+    hasUnsaved = true;
+    setSaveStatus('dirty');
+  });
+
+  dom.saveBtn.addEventListener('click', async () => {
+    if (!currentNote) return;
+    const content = dom.editorTextarea.value;
+    dom.saveBtn.disabled = true;
+    setSaveStatus('saving');
+    try {
+      const res = await fetch(`/api/notes/${encodeURIComponent(currentNote.filename)}`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ content }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      hasUnsaved = false;
+      setSaveStatus('saved');
+
+      // Reload graph (preserving positions) so backlinks/edges update
+      await loadGraph(true);
+      const r2 = await fetch(`/api/notes/${encodeURIComponent(currentNote.filename)}`);
+      if (r2.ok) currentNote = await r2.json();
+
+      setTimeout(() => { isEditing = false; dom.editToggle.textContent = 'Edit'; renderPanel(currentNote); }, 700);
+    } catch (err) {
+      console.error('[gardenX] save failed:', err);
+      setSaveStatus('error');
+    } finally {
+      dom.saveBtn.disabled = false;
+    }
+  });
+
+  function setSaveStatus(state) {
+    const map = {
+      idle:   ['—',                'text-slate-700'   ],
+      dirty:  ['Unsaved changes',  'text-amber-600/80'],
+      saving: ['Saving…',          'text-slate-500'   ],
+      saved:  ['Saved',            'text-emerald-600' ],
+      error:  ['Save failed',      'text-red-500'     ],
+    };
+    const [text, cls] = map[state] ?? map.idle;
+    dom.saveStatus.textContent = text;
+    dom.saveStatus.className   = `text-[11px] ${cls}`;
+  }
+
+  // ── DOM post-processing: linkify #tags in rendered content ────
+  // Walks text nodes (skipping <code>, <pre>) and wraps #word in
+  // clickable <button class="tag-link"> elements.
+  function linkifyTagsInDom(container) {
+    const RE_TAG = /#([a-zA-Z][a-zA-Z0-9_-]*)/g;
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const tag = node.parentElement?.tagName ?? '';
+        return ['CODE', 'PRE', 'BUTTON', 'A'].includes(tag)
+          ? NodeFilter.FILTER_REJECT
+          : NodeFilter.FILTER_ACCEPT;
+      },
+    });
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+    for (const tn of textNodes) {
+      if (!RE_TAG.test(tn.textContent)) continue;
+      RE_TAG.lastIndex = 0;
+      const frag  = document.createDocumentFragment();
+      const parts = tn.textContent.split(/(#[a-zA-Z][a-zA-Z0-9_-]*)/g);
+      for (const part of parts) {
+        if (/^#[a-zA-Z]/.test(part)) {
+          const btn = document.createElement('button');
+          btn.className    = 'tag-link';
+          btn.dataset.tag  = part.slice(1);
+          btn.textContent  = part;
+          btn.addEventListener('click', () => {
+            dom.searchInput.value = part;
+            dom.searchClear.classList.remove('hidden');
+            runSearch();
+          });
+          frag.appendChild(btn);
+        } else {
+          frag.appendChild(document.createTextNode(part));
+        }
+      }
+      tn.parentNode.replaceChild(frag, tn);
+    }
+  }
+
+  // ── Search & filter ───────────────────────────────────────────
+  let searchDebounce;
+  let activeFilter = null; // Set<id> | null
+
+  dom.searchInput.addEventListener('input', () => {
+    const raw = dom.searchInput.value;
+    dom.searchClear.classList.toggle('hidden', !raw.trim());
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(runSearch, 200);
+  });
+
+  dom.searchClear.addEventListener('click', () => {
+    dom.searchInput.value = '';
+    dom.searchClear.classList.add('hidden');
+    clearGraphFilter();
+  });
+
+  function runSearch() {
+    const raw = dom.searchInput.value.trim();
+    if (!raw) { clearGraphFilter(); return; }
+
+    if (raw.startsWith('#')) {
+      // Tag filter — client-side, instant
+      const tag = raw.slice(1).toLowerCase();
+      const hits = new Set(
+        graphData.nodes.filter(n =>
+          (n.tags ?? []).some(t => t.toLowerCase().includes(tag))
+        ).map(n => n.id)
+      );
+      applyGraphFilter(hits);
+    } else {
+      // Full-text search — server-side, debounced
+      fetchSearch(raw);
+    }
+  }
+
+  async function fetchSearch(q) {
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      if (!res.ok) throw new Error();
+      const results = await res.json();
+      applyGraphFilter(new Set(results.map(r => r.filename)));
+    } catch {
+      clearGraphFilter();
+    }
+  }
+
+  function applyGraphFilter(hitSet) {
+    activeFilter = hitSet;
+    if (!nodeSel || !linkSel) return;
+
+    nodeSel.classed('node-dim', d => !hitSet.has(d.id));
+    // Highlight hit nodes with a slightly brighter stroke
+    nodeSel.select('circle.nc')
+      .attr('stroke', d =>
+        hitSet.has(d.id) && d.id !== selectedId ? '#34d399' : GC.nodeStroke
+      );
+    linkSel.classed('edge-dim', d => {
+      const s = d.source?.id ?? d.source;
+      const t = d.target?.id ?? d.target;
+      return !hitSet.has(s) && !hitSet.has(t);
+    });
+
+    const n = hitSet.size;
+    dom.filterBadge.textContent = `${n} match${n !== 1 ? 'es' : ''}`;
+    dom.filterBadge.classList.remove('hidden');
+  }
+
+  function clearGraphFilter() {
+    activeFilter = null;
+    if (!nodeSel || !linkSel) return;
+    nodeSel.classed('node-dim', false);
+    nodeSel.select('circle.nc').attr('stroke', d =>
+      d.id === selectedId ? GC.nodeSelStroke : GC.nodeStroke
+    );
+    linkSel.classed('edge-dim', false);
+    dom.filterBadge.classList.add('hidden');
+  }
+
+  // ── Zoom controls ─────────────────────────────────────────────
+  dom.zoomIn.addEventListener('click', () => {
+    if (zoomBehavior) d3.select(dom.graph).transition().duration(220).call(zoomBehavior.scaleBy, 1.45);
+  });
+  dom.zoomOut.addEventListener('click', () => {
+    if (zoomBehavior) d3.select(dom.graph).transition().duration(220).call(zoomBehavior.scaleBy, 1 / 1.45);
+  });
+  dom.zoomReset.addEventListener('click', () => {
+    if (zoomBehavior) d3.select(dom.graph).transition().duration(320).call(zoomBehavior.transform, d3.zoomIdentity);
+  });
+
+  // ── Refresh ───────────────────────────────────────────────────
+  dom.refreshBtn.addEventListener('click', async () => {
+    dom.refreshBtn.disabled          = true;
+    dom.refreshIcon.style.animation  = 'spin .7s linear infinite';
+    dom.refreshIcon.style.transformOrigin = 'center';
+    await loadGraph(true);
+    if (selectedId) await selectNoteInternal(selectedId);
+    dom.refreshBtn.disabled         = false;
+    dom.refreshIcon.style.animation = '';
+  });
+
+  // ── Navigation buttons ────────────────────────────────────────
+  dom.navBack.addEventListener('click', goBack);
+  dom.navFwd.addEventListener('click', goForward);
+
+  // ── Keyboard shortcuts ────────────────────────────────────────
+  document.addEventListener('keydown', ev => {
+    const mod = ev.metaKey || ev.ctrlKey;
+
+    // Alt+← / Alt+→  — history navigation
+    if (ev.altKey && ev.key === 'ArrowLeft')  { ev.preventDefault(); goBack();    return; }
+    if (ev.altKey && ev.key === 'ArrowRight') { ev.preventDefault(); goForward(); return; }
+
+    // Cmd/Ctrl+K — focus search
+    if (mod && ev.key === 'k') { ev.preventDefault(); dom.searchInput.focus(); dom.searchInput.select(); return; }
+
+    // Escape — clear search or exit edit
+    if (ev.key === 'Escape') {
+      if (isEditing)                    { exitEdit(); return; }
+      if (dom.searchInput.value.trim()) { dom.searchInput.value = ''; dom.searchClear.classList.add('hidden'); clearGraphFilter(); return; }
+    }
+  });
+
+  // ── Window resize — keep simulation centred ───────────────────
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (simulation) {
+        const W = dom.graph.clientWidth;
+        const H = dom.graph.clientHeight;
+        simulation.force('center', d3.forceCenter(W / 2, H / 2).strength(.06));
+        simulation.alpha(.2).restart();
+      }
+    }, 150);
+  });
+
+  // ── Boot ──────────────────────────────────────────────────────
+  setupMarked();
+  refreshNavButtons();
+  loadGraph();
+  </script>
+</body>
+</html>
