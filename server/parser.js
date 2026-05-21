@@ -114,10 +114,11 @@ function buildGraph(notesDir) {
 
   for (const [, note] of noteMap) {
     nodes.push({
-      id:        note.filename,
-      title:     note.title,
-      tags:      note.tags,
-      backlinks: note.backlinks,
+      id:            note.filename,
+      title:         note.title,
+      tags:          note.tags,
+      backlinks:     note.backlinks,
+      backlinkCount: note.backlinks.length,
     });
 
     for (const link of note.links) {
