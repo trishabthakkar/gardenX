@@ -2,8 +2,6 @@
 
 A personal knowledge graph built on plain Markdown files. Drop `.md` notes into `/notes`, wiki-link between them with `[[Note Name]]`, and watch an interactive force-directed graph build itself in real time.
 
-![gardenX — Deep Obsidian & Sage Emerald theme](https://placeholder)
-
 ## Features
 
 - **Markdown-driven** — raw `.md` files are the only database; no SQL, no ORM
