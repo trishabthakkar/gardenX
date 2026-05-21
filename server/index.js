@@ -21,7 +21,7 @@ const { createWatcher } = require('./watcher');
 const { parseNote }     = require('./parser');
 
 const app       = express();
-const PORT      = process.env.PORT || 3000;
+const PORT      = process.env.PORT || 5001;
 const NOTES_DIR = path.resolve(__dirname, '../notes');
 
 // Ensure /notes exists even on a fresh clone
